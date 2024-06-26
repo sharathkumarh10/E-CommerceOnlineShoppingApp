@@ -47,7 +47,10 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public ResponseEntity<ResponseStructure<UserResponse>> saveUser(UserRequest userRequest, UserRole userRole) {
 
-		User user = null;
+	
+		 if (userRepository.existsByEmail(userRequest.getEmail()))
+	            throw new UserAlreadyExistException("User already exist");
+			User user = null;
 		MessageData messageData =new MessageData();
 
 
