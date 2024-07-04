@@ -1,4 +1,4 @@
-package com.jsp.osa.service;
+package com.jsp.osa.serviceimpl;
 
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -12,9 +12,11 @@ import lombok.AllArgsConstructor;
 @Service
 @AllArgsConstructor
 public class MailService {
+	
 private final JavaMailSender javaMailSender;
 
 public void sendMail(MessageData messageData) throws MessagingException {
+	
 	MimeMessage message = javaMailSender.createMimeMessage();
 	MimeMessageHelper helper = new MimeMessageHelper(message, true);
 	helper.setTo(messageData.getTo());

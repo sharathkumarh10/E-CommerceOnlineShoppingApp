@@ -1,6 +1,5 @@
 package com.jsp.osa.utility;
 
-
 import java.util.Date;
 
 import lombok.AllArgsConstructor;
@@ -15,8 +14,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @Builder
 public class MessageData {
-private String to;
-private String subject;
-private  Date sentDate;
-private String text;
+
+	private String to;
+	private String subject;
+	private Date sentDate;
+	private String text;
 }
