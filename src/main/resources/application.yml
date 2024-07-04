@@ -11,6 +11,7 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQL8Dialect
+        
   #SMTP Configuration
   mail:
     host: smtp.gmail.com
@@ -23,3 +24,13 @@ spring:
           starttls:
             enable: true
             required: true
+
+application:
+   jwt:
+      secret: ${jwt.secret}
+      access_expiry_seconds: 3600
+      refresh_expiry_seconds: 1296000
+   cookie:
+      domain: localhost
+      same_site: Lax
+      secure: false
