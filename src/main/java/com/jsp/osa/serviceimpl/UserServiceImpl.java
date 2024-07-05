@@ -175,8 +175,7 @@ public class UserServiceImpl implements UserService {
 					.body(new ResponseStructure<UserResponse>().setStatus(HttpStatus.OK.value())
 							.setMessage("User registration successful").setData(userMapper.mapToUserResponse(user)));
 
-		}
-		else
+		} else
 			throw new IncorrectOTPException("Invalid otp");
 	}
 
@@ -310,10 +309,34 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public ResponseEntity<SimpleStructure> logoutFromAllDevices() {
+	public ResponseEntity<SimpleStructure> logoutFromOtherDevices(String refreshToken, String accessToken) {
+		// TODO Auto-generated method stub
+		String userName = jwtService.extractUserName(refreshToken);
+		return userRepository.findByUserName(userName).map(user -> {
+
+			accessTokenRepository.findByUserAndIsBlockedAndTokenNot(user, false,accessToken).forEach(at -> {
+				at.setBlocked(true);
+				accessTokenRepository.save(at);
+			});
+
+			refreshTokenRepository.findByUserAndIsBlockedAndRefreshTokenNot(user, false,refreshToken).forEach(rt -> {
+				rt.setBlocked(true);
+				refreshTokenRepository.save(rt);
+			});
+
+		
+
+			return ResponseEntity.status(HttpStatus.OK).body(new SimpleStructure()
+					.setStatus(HttpStatus.OK.value()).setMessage("logout from all other devices Successfully"));
+		}).orElseThrow(() -> new UsernameNotFoundException("failed to logout from other devices"));
+
+	}
+
+	@Override
+	public ResponseEntity<SimpleStructure> logoutFromAllDevices(String accessToken) {
 		// TODO Auto-generated method stub
 
-		String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+		String userName = jwtService.extractUserName(accessToken);
 
 		return userRepository.findByUserName(userName).map(user -> {
 
@@ -321,7 +344,7 @@ public class UserServiceImpl implements UserService {
 				at.setBlocked(true);
 				accessTokenRepository.save(at);
 			});
-			
+
 			refreshTokenRepository.findByUserAndIsBlocked(user, false).forEach(rt -> {
 				rt.setBlocked(true);
 				refreshTokenRepository.save(rt);
@@ -331,8 +354,8 @@ public class UserServiceImpl implements UserService {
 			httpHeaders.add(HttpHeaders.SET_COOKIE, generateCookie("at", null, 0));
 			httpHeaders.add(HttpHeaders.SET_COOKIE, generateCookie("rt", null, 0));
 
-			return ResponseEntity.status(HttpStatus.OK).headers(httpHeaders)
-					.body(new SimpleStructure().setStatus(HttpStatus.OK.value()).setMessage("logout Successfull"));
+			return ResponseEntity.status(HttpStatus.OK).headers(httpHeaders).body(new SimpleStructure()
+					.setStatus(HttpStatus.OK.value()).setMessage("logout from all devices Successfully"));
 		}).orElseThrow(() -> new UsernameNotFoundException("failed to logout"));
 
 	}

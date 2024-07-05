@@ -2,6 +2,7 @@ package com.jsp.osa.securityfilters;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -10,7 +11,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.jsp.osa.entity.AccessToken;
+import com.jsp.osa.entity.RefreshToken;
 import com.jsp.osa.exception.InavlidJwtException;
+import com.jsp.osa.repository.AccessTokenRepo;
+import com.jsp.osa.repository.RefreshTokenRepo;
 import com.jsp.osa.security.JwtService;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -27,6 +32,10 @@ import lombok.AllArgsConstructor;
 public class JwtAuthFilters extends OncePerRequestFilter {
 
 	private JwtService jwtService;
+	
+	private RefreshTokenRepo refreshTokenRepo;
+	
+	private AccessTokenRepo accessTokenRepo;
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -35,22 +44,30 @@ public class JwtAuthFilters extends OncePerRequestFilter {
 		TokenExceptionHandler handler = new TokenExceptionHandler();
 		Cookie[] cookie = request.getCookies();
 
-		String token = null;
+		String at = null,rt=null;
 
 		if (cookie != null) {
 
 			for (Cookie cookies : cookie) {
 
-				if (cookies.getName().equals("at")) {
+				if (cookies.getName().equals("at")) 
 
-					token = cookies.getValue();
-				}
+					at = cookies.getValue();
+				
+				else if(cookies.getName().equals("rt"))
 
-					if (token != null) {
+				   if (at != null && rt != null) {
+			            Optional<RefreshToken> optionalRT = refreshTokenRepo.findByRefreshToken(rt);
+			            Optional<AccessToken> optionalAT = accessTokenRepo.findByToken(at);
+
+			            if (optionalRT.isPresent() && optionalAT.isPresent()) {
+			                RefreshToken refreshToken = optionalRT.get();
+			                AccessToken accessToken = optionalAT.get();
+			                if (!refreshToken.isBlocked() & !accessToken.isBlocked()) {
 						try {
 
-							String userName = jwtService.extractUserName(token);
-							String userRole = jwtService.extractUserRole(token);
+							String userName = jwtService.extractUserName(at);
+							String userRole = jwtService.extractUserRole(at);
 
 							if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -62,9 +79,7 @@ public class JwtAuthFilters extends OncePerRequestFilter {
 
 								SecurityContextHolder.getContext().setAuthentication(token1);
 
-								System.out.println(token);
-								System.out.println(userName);
-								System.out.println(userRole);
+								
 
 							}
 						} catch (ExpiredJwtException ex) {
@@ -83,6 +98,9 @@ public class JwtAuthFilters extends OncePerRequestFilter {
 
 		filterChain.doFilter(request, response);
 		}
+
+		}
 	}
+}
 
 

@@ -25,6 +25,7 @@ public interface UserService {
 
 	public ResponseEntity<ResponseStructure<AuthResponse>> logout(String refreshToken, String accessToken);
 
+	public ResponseEntity<SimpleStructure> logoutFromOtherDevices(String refreshToken, String accessToken);
 
-	ResponseEntity<SimpleStructure> logoutFromAllDevices();
+	public ResponseEntity<SimpleStructure> logoutFromAllDevices(String accessToken);
 }
