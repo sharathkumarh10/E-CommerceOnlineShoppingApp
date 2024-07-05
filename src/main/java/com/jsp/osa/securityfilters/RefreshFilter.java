@@ -60,9 +60,9 @@ public class RefreshFilter extends OncePerRequestFilter {
 						SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
 					}
 
-				} catch (ExpiredJwtException ex) {
+				} catch ( Exception e) {
 
-					handler.tokenException(HttpStatus.UNAUTHORIZED.value(), response, "token time out");
+					handler.tokenException(HttpStatus.UNAUTHORIZED.value(), response, "illegal relogin activity");
 				}
 
 			}

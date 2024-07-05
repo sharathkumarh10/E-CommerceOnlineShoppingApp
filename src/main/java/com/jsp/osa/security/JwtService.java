@@ -3,6 +3,7 @@ package com.jsp.osa.security;
 import java.security.Key;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -75,9 +76,10 @@ public class JwtService {
 
 	public boolean isTokenValid(String token) {
 		// TODO Auto-generated method stub
-		RefreshToken refreshToken = refreshTokenRepo.findByToken(token);
+		Optional<RefreshToken> refreshToken = refreshTokenRepo.findByRefreshToken(token);
+		RefreshToken refreshToken1=refreshToken.get();
 		return parseJwtToken(token).getExpiration()
-				.after(new Date()) && refreshToken != null && !refreshToken.isBlocked();
+				.after(new Date()) && refreshToken1 != null && !refreshToken1.isBlocked();
 	}
 	
 }
