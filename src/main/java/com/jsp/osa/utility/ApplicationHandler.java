@@ -11,6 +11,8 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.jsp.osa.exception.UserAlreadyLoggedInException;
+
 
 
 public class ApplicationHandler {
@@ -28,8 +30,8 @@ public class ApplicationHandler {
 
 	@ExceptionHandler
 	public ResponseEntity<ErrorStructure<Map<String,String>>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex){
+		
 		List<ObjectError> errors =  ex.getAllErrors();
-
 		Map<String, String> allErrors = new HashMap<String, String>();
 		errors.forEach(error ->{
 			FieldError fieldError = (FieldError) error;
@@ -37,12 +39,18 @@ public class ApplicationHandler {
 			String message = fieldError.getDefaultMessage();
 			allErrors.put(field, message);
 		});
+		
 		return ResponseEntity
 				.status(HttpStatus.BAD_REQUEST)
 				.body(new ErrorStructure<Map<String,String>>()
 						.setStatus(HttpStatus.BAD_REQUEST.value())
 						.setMessage("invalid input")
 						.setRootcause(allErrors));
+	}
+	
+	@ExceptionHandler
+	public ResponseEntity<ErrorStructure<String>> userAlreadyLoggedInException(UserAlreadyLoggedInException exception) {
+		return errorResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage(), "User Already login");
 	}
 
 }
