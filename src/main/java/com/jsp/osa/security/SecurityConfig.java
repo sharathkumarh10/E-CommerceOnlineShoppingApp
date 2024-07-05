@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.jsp.osa.repository.AccessTokenRepo;
 import com.jsp.osa.repository.RefreshTokenRepo;
 import com.jsp.osa.securityfilters.JwtAuthFilters;
 import com.jsp.osa.securityfilters.LoginFilter;
@@ -26,10 +27,9 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class SecurityConfig {
 	
-	private final RefreshTokenRepo refreshTokenRepo;
 	private final JwtService jwtService;
-	
-
+	private final RefreshTokenRepo refreshTokenRepo;
+	private final AccessTokenRepo accessTokenRepo;
 	
 	@Bean
 	 PasswordEncoder passwordEncoder() {
@@ -68,7 +68,7 @@ public class SecurityConfig {
 				.securityMatchers(matcher -> matcher.requestMatchers("/api/v3/**"))
 				.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.addFilterBefore(new JwtAuthFilters(jwtService), UsernamePasswordAuthenticationFilter.class)
+				.addFilterBefore(new JwtAuthFilters(jwtService, refreshTokenRepo, accessTokenRepo), UsernamePasswordAuthenticationFilter.class)
 				.build();
 		}
 	
