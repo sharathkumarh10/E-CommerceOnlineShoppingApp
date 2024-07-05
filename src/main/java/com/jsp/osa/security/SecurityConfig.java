@@ -42,7 +42,7 @@ public class SecurityConfig {
    @Order(1)
     SecurityFilterChain loginSecurityFilterChain(HttpSecurity httpSecurity) throws Exception  {
         return httpSecurity.csrf(csrf-> csrf.disable())
-                .securityMatchers(matcher -> matcher.requestMatchers("/api/v3/login/**", "/api/version1/sellers/registers**", "/api/version1/customers/registers**"))
+                .securityMatchers(matcher -> matcher.requestMatchers("/api/v3/login/**", "/api/v3/sellers/registers/**", "/api/v3/customers/registers/**"))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new LoginFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();

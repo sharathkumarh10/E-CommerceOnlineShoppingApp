@@ -3,6 +3,7 @@ package com.jsp.osa.serviceimpl;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.google.common.cache.Cache;
@@ -24,8 +26,10 @@ import com.jsp.osa.entity.Seller;
 import com.jsp.osa.entity.User;
 import com.jsp.osa.enums.UserRole;
 import com.jsp.osa.exception.EmailNotFoundException;
+import com.jsp.osa.exception.IncorrectOTPException;
 import com.jsp.osa.exception.OtpExpiredException;
 import com.jsp.osa.exception.TokenExpiredException;
+import com.jsp.osa.exception.UserNotLoggedInException;
 import com.jsp.osa.exception.UsernameNotFoundException;
 import com.jsp.osa.mapper.UserMapper;
 import com.jsp.osa.repository.AccessTokenRepo;
@@ -40,6 +44,7 @@ import com.jsp.osa.security.JwtService;
 import com.jsp.osa.service.UserService;
 import com.jsp.osa.utility.MessageData;
 import com.jsp.osa.utility.ResponseStructure;
+import com.jsp.osa.utility.SimpleStructure;
 
 import jakarta.mail.MessagingException;
 
@@ -72,9 +77,10 @@ public class UserServiceImpl implements UserService {
 	@Value("${application.cookie.secure}")
 	private Boolean secure;
 
-	public UserServiceImpl(UserRepository userRepository,UserMapper userMapper, Cache<String, User> userCache, Random random,
-			Cache<String, String> otpCache, MailService mailService, AuthenticationManager authenticationManager,
-			JwtService jwtService, AccessTokenRepo accessTokenRepository, RefreshTokenRepo refreshTokenRepository) {
+	public UserServiceImpl(UserRepository userRepository, UserMapper userMapper, Cache<String, User> userCache,
+			Random random, Cache<String, String> otpCache, MailService mailService,
+			AuthenticationManager authenticationManager, JwtService jwtService, AccessTokenRepo accessTokenRepository,
+			RefreshTokenRepo refreshTokenRepository) {
 		super();
 		this.userRepository = userRepository;
 		this.userMapper = userMapper;
@@ -121,7 +127,8 @@ public class UserServiceImpl implements UserService {
 
 		return ResponseEntity.status(HttpStatus.ACCEPTED)
 				.body(new ResponseStructure<UserResponse>().setStatus(HttpStatus.ACCEPTED.value())
-						.setMessage("user registration successful. Please check your email for OTP verifiacation").setData(userMapper.mapToUserResponse(user)));
+						.setMessage("user registration successful. Please check your email for OTP verifiacation")
+						.setData(userMapper.mapToUserResponse(user)));
 
 	}
 
@@ -129,43 +136,48 @@ public class UserServiceImpl implements UserService {
 	public ResponseEntity<ResponseStructure<UserResponse>> verifyOtp(OTPVerificationRequest otpVerificationRequest) {
 
 		// TODO Auto-generated method stub
+
 		User user = userCache.getIfPresent(otpVerificationRequest.getEmail());
-		String otp = otpCache.getIfPresent(otpVerificationRequest.getEmail());
-		String email = user.getEmail();
-		if (email == null) {
-			throw new IllegalArgumentException("invalid email address");
-		}
-		int atIndex = email.indexOf("@");
-		String name = email.substring(0, atIndex);
-		if(user == null || otp == null)
-		{
-			return ResponseEntity.status(HttpStatus.NOT_FOUND)
-					.body(new ResponseStructure<UserResponse>()
-							.setMessage("Invalid OTP or User not found")
-							.setStatus(HttpStatus.NOT_FOUND.value()));
-		}
-		if ((otpVerificationRequest.getOtp()).equals(otp))
+		String existingotp = otpCache.getIfPresent(otpVerificationRequest.getEmail());
+		String requestedotp = otpVerificationRequest.getOtp();
+		if (user == null)
+			throw new UsernameNotFoundException("User not found");
+		else if (existingotp == null && existingotp.equals(requestedotp))
+			throw new OtpExpiredException("Otp is expired");
+		else if (existingotp.equals(requestedotp)) {
+
+			String email = user.getEmail();
+			{
+				if (email == null) {
+					throw new IllegalArgumentException("invalid email address");
+				}
+			}
+			int atIndex = email.indexOf("@");
+			String name = email.substring(0, atIndex);
 			user.setUserName(name);
-		user.setEmailVerified(true);
-		user = userRepository.save(user);
-		MessageData messageData = new MessageData();
+			user.setEmailVerified(true);
+			user = userRepository.save(user);
+			MessageData messageData = new MessageData();
 
-		messageData.setTo(user.getEmail());
-		messageData.setSubject("User registration is done");
-		messageData.setSentDate(new Date());
-		messageData
-				.setText("Your registration is successful for  online shopiping " + " username: " + user.getUserName());
+			messageData.setTo(user.getEmail());
+			messageData.setSubject("User registration is done");
+			messageData.setSentDate(new Date());
+			messageData.setText(
+					"Your registration is successful for  online shopiping " + " username: " + user.getUserName());
 
-		try {
-			mailService.sendMail(messageData);
+			try {
+				mailService.sendMail(messageData);
 
-		} catch (MessagingException e) {
-			throw new EmailNotFoundException("Failed to send confirmation mail");
+			} catch (MessagingException e) {
+				throw new EmailNotFoundException("Failed to send confirmation mail");
+			}
+			return ResponseEntity.status(HttpStatus.OK)
+					.body(new ResponseStructure<UserResponse>().setStatus(HttpStatus.OK.value())
+							.setMessage("User registration successful").setData(userMapper.mapToUserResponse(user)));
+
 		}
-		return ResponseEntity.status(HttpStatus.OK)
-				.body(new ResponseStructure<UserResponse>().setStatus(HttpStatus.OK.value())
-						.setMessage("User registration successful").setData(userMapper.mapToUserResponse(user)));
-
+		else
+			throw new IncorrectOTPException("Invalid otp");
 	}
 
 	@Override
@@ -184,8 +196,8 @@ public class UserServiceImpl implements UserService {
 						.body(new ResponseStructure<AuthResponse>().setStatus(HttpStatus.OK.value())
 								.setMessage("login successfully")
 								.setData(AuthResponse.builder().userId(user.getUserId()).userName(user.getUserName())
-										.accessExpiration(accessExpirySeconds).refreshExpiration(refreshExpirySeconds)
-										.build()));
+										.roles(user.getUserRole().toString()).accessExpiration(accessExpirySeconds)
+										.refreshExpiration(refreshExpirySeconds).build()));
 			}).orElseThrow(() -> new UsernameNotFoundException(" User name is not found"));
 
 		} else
@@ -214,7 +226,7 @@ public class UserServiceImpl implements UserService {
 				user.getUserRole().toString());
 
 		RefreshToken access = new RefreshToken();
-		access.setToken(refreshToken);
+		access.setRefreshToken(refreshToken);
 		access.setExpiration(LocalDateTime.now().plusSeconds(60 * 60 * 24 * 15));
 		access.setBlocked(false);
 		access.setUser(user);
@@ -235,7 +247,6 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public ResponseEntity<ResponseStructure<AuthResponse>> refreshlogin(String refreshToken) {
 		// TODO Auto-generated method stub
-
 
 		Date date = jwtService.extractExpireDate(refreshToken);
 
@@ -264,6 +275,65 @@ public class UserServiceImpl implements UserService {
 									.refreshExpiration(date.getTime() - (LocalDateTime.now().getSecond())).build()));
 
 		}
+
+	}
+
+	@Override
+	public ResponseEntity<ResponseStructure<AuthResponse>> logout(String refreshToken, String accessToken) {
+
+		if (refreshToken == null || accessToken == null)
+			throw new UserNotLoggedInException("Please login first");
+		else {
+			Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository.findByRefreshToken(refreshToken);
+			Optional<AccessToken> optionalAccessToken = accessTokenRepository.findByToken(accessToken);
+			RefreshToken existRefreshToken = optionalRefreshToken.get();
+			AccessToken existAccessToken = optionalAccessToken.get();
+
+			existRefreshToken.setBlocked(true);
+			existAccessToken.setBlocked(true);
+			refreshTokenRepository.save(existRefreshToken);
+			accessTokenRepository.save(existAccessToken);
+
+			HttpHeaders httpHeaders = new HttpHeaders();
+			httpHeaders.add(HttpHeaders.SET_COOKIE, generateCookie("rt", null, 0));
+			httpHeaders.add(HttpHeaders.SET_COOKIE, generateCookie("at", null, 0));
+
+			User user = existRefreshToken.getUser();
+			return ResponseEntity.status(HttpStatus.OK).headers(httpHeaders)
+					.body(new ResponseStructure<AuthResponse>().setStatus(HttpStatus.OK.value())
+							.setMessage("User logout done")
+							.setData(AuthResponse.builder().userId(user.getUserId()).userName(user.getUserName())
+									.roles(user.getUserRole().toString()).accessExpiration(0).refreshExpiration(0)
+									.build()));
+			// TODO Auto-generated method stub
+		}
+	}
+
+	@Override
+	public ResponseEntity<SimpleStructure> logoutFromAllDevices() {
+		// TODO Auto-generated method stub
+
+		String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+
+		return userRepository.findByUserName(userName).map(user -> {
+
+			accessTokenRepository.findByUserAndIsBlocked(user, false).forEach(at -> {
+				at.setBlocked(true);
+				accessTokenRepository.save(at);
+			});
+			
+			refreshTokenRepository.findByUserAndIsBlocked(user, false).forEach(rt -> {
+				rt.setBlocked(true);
+				refreshTokenRepository.save(rt);
+			});
+
+			HttpHeaders httpHeaders = new HttpHeaders();
+			httpHeaders.add(HttpHeaders.SET_COOKIE, generateCookie("at", null, 0));
+			httpHeaders.add(HttpHeaders.SET_COOKIE, generateCookie("rt", null, 0));
+
+			return ResponseEntity.status(HttpStatus.OK).headers(httpHeaders)
+					.body(new SimpleStructure().setStatus(HttpStatus.OK.value()).setMessage("logout Successfull"));
+		}).orElseThrow(() -> new UsernameNotFoundException("failed to logout"));
 
 	}
 

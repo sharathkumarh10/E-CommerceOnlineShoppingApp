@@ -15,6 +15,7 @@ import com.jsp.osa.responsedto.AuthResponse;
 import com.jsp.osa.responsedto.UserResponse;
 import com.jsp.osa.service.UserService;
 import com.jsp.osa.utility.ResponseStructure;
+import com.jsp.osa.utility.SimpleStructure;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -57,6 +58,23 @@ public class UserController {
 	public String test() {
 		 return "success";
 	}
+	
+	@PostMapping("/logout")
+	public ResponseEntity<ResponseStructure<AuthResponse>> logout(@CookieValue(value = "rt",required = false) String refreshToken,
+			@CookieValue(value = "at",required = false) String accessToken)
+		{
+		return userService.logout(refreshToken,accessToken);
+		
+	}
+	
+	@PostMapping("/logoutAll")
+	public ResponseEntity<SimpleStructure> logoutFromAll()
+		{
+		return userService.logoutFromAllDevices();
+		
+	}
+	
+	
 	
 
 }

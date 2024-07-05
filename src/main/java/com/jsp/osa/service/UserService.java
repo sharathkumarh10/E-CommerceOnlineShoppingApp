@@ -9,6 +9,7 @@ import com.jsp.osa.requestdto.UserRequest;
 import com.jsp.osa.responsedto.AuthResponse;
 import com.jsp.osa.responsedto.UserResponse;
 import com.jsp.osa.utility.ResponseStructure;
+import com.jsp.osa.utility.SimpleStructure;
 
 public interface UserService {
 
@@ -21,4 +22,9 @@ public interface UserService {
 	public ResponseEntity<ResponseStructure<AuthResponse>> login(AuthRequest authRequest );
 
 	public ResponseEntity<ResponseStructure<AuthResponse>> refreshlogin(String refreshToken);
+
+	public ResponseEntity<ResponseStructure<AuthResponse>> logout(String refreshToken, String accessToken);
+
+
+	ResponseEntity<SimpleStructure> logoutFromAllDevices();
 }
