@@ -1,5 +1,6 @@
 package com.jsp.osa.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +17,8 @@ public interface AccessTokenRepo extends JpaRepository<AccessToken, Integer> {
 	List<AccessToken> findByUserAndIsBlocked(User user, boolean b);
 
 	List<AccessToken> findByUserAndIsBlockedAndTokenNot(User user, boolean b, String accessToken);
+
+	List<AccessToken> findAllByExpirationBefore(LocalDateTime now);
 
 
 
