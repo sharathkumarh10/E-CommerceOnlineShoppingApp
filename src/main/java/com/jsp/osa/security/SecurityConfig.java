@@ -42,7 +42,10 @@ public class SecurityConfig {
    @Order(1)
     SecurityFilterChain loginSecurityFilterChain(HttpSecurity httpSecurity) throws Exception  {
         return httpSecurity.csrf(csrf-> csrf.disable())
-                .securityMatchers(matcher -> matcher.requestMatchers("/api/v3/login/**", "/api/v3/sellers/registers/**", "/api/v3/customers/registers/**"))
+                .securityMatchers(matcher -> matcher.requestMatchers("/api/v3/login/**",
+                		"/api/v3/register/customers", 
+                		"/api/v3/register/sellers"))
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new LoginFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -56,7 +59,7 @@ public class SecurityConfig {
 				.securityMatchers(matcher -> matcher.requestMatchers("/api/v3/refreshLogin/**"))
 				.authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.addFilterBefore(new RefreshFilter(jwtService,refreshTokenRepo), UsernamePasswordAuthenticationFilter.class)
+				.addFilterBefore(new RefreshFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
 				.build();
 		}
     
@@ -65,7 +68,7 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 		
 		return httpSecurity.csrf(csrf -> csrf.disable())
-				.securityMatchers(matcher -> matcher.requestMatchers("/api/v3/**"))
+				.securityMatchers(matcher -> matcher.requestMatchers("/api/v3/register/**"))
 				.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.addFilterBefore(new JwtAuthFilters(jwtService, refreshTokenRepo, accessTokenRepo), UsernamePasswordAuthenticationFilter.class)

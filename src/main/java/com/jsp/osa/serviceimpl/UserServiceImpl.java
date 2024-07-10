@@ -15,7 +15,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.google.common.cache.Cache;
@@ -194,8 +193,11 @@ public class UserServiceImpl implements UserService {
 				return ResponseEntity.ok().headers(headers)
 						.body(new ResponseStructure<AuthResponse>().setStatus(HttpStatus.OK.value())
 								.setMessage("login successfully")
-								.setData(AuthResponse.builder().userId(user.getUserId()).userName(user.getUserName())
-										.roles(user.getUserRole().toString()).accessExpiration(accessExpirySeconds)
+								.setData(AuthResponse.builder()
+										.userId(user.getUserId())
+										.userName(user.getUserName())
+										.roles(user.getUserRole().toString())
+										.accessExpiration(accessExpirySeconds)
 										.refreshExpiration(refreshExpirySeconds).build()));
 			}).orElseThrow(() -> new UsernameNotFoundException(" User name is not found"));
 

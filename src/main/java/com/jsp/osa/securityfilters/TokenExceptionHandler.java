@@ -19,7 +19,7 @@ public class TokenExceptionHandler {
 			ErrorStructure<String> error=new ErrorStructure<String>()
 					.setStatus(HttpStatus.UNAUTHORIZED.value())
 					.setMessage("Failed to authenticate")
-					.setRootcause("Token is not valid");
+					.setRootcause(rootCause);
 			new ObjectMapper().writeValue(response.getOutputStream(), error);
 		}
 

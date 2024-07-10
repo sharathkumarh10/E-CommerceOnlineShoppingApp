@@ -19,7 +19,6 @@ import com.jsp.osa.utility.SimpleStructure;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-
 @RestController
 @RequestMapping("/api/v3")
 @AllArgsConstructor
