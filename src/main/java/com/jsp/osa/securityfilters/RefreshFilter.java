@@ -10,10 +10,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.jsp.osa.repository.RefreshTokenRepo;
 import com.jsp.osa.security.JwtService;
 
-import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -25,7 +23,6 @@ import lombok.AllArgsConstructor;
 public class RefreshFilter extends OncePerRequestFilter {
 
 	private JwtService jwtService;
-	private RefreshTokenRepo refreshTokenRepo;
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

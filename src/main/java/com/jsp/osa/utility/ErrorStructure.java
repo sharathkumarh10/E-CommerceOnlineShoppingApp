@@ -1,6 +1,5 @@
 package com.jsp.osa.utility;
 
-import lombok.Builder;
 
 public class ErrorStructure <T>{
 	
